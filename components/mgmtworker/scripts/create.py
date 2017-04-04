@@ -10,13 +10,17 @@ ctx.download_resource(
 import utils  # NOQA
 
 
-MGMT_WORKER_SERVICE_NAME = 'mgmtworker'
+# Some runtime properties to be used in teardown
+runtime_props = ctx.instance.runtime_properties
+runtime_props['service_name'] = 'mgmtworker'
+runtime_props['home_folder'] = '/opt/mgmtworker'
+runtime_props['log_folder'] = '/var/log/cloudify/mgmtworker'
 
-ctx_properties = utils.ctx_factory.create(MGMT_WORKER_SERVICE_NAME)
+ctx_properties = utils.ctx_factory.create(runtime_props['service_name'])
 
 
-def _install_optional(mgmtworker_venv):
-
+def _install_optional():
+    mgmtworker_venv = '{0}/env'.format(runtime_props['home_folder'])
     rest_props = utils.ctx_factory.get('restservice')
     rest_client_source_url = \
         rest_props['rest_client_module_source_url']
@@ -45,7 +49,7 @@ def _install_optional(mgmtworker_venv):
         ctx.logger.info('Downloading cloudify-manager Repository...')
         manager_repo = \
             utils.download_cloudify_resource(rest_service_source_url,
-                                             MGMT_WORKER_SERVICE_NAME)
+                                             runtime_props['service_name'])
         ctx.logger.info('Extracting Manager Repository...')
         utils.untar(manager_repo)
 
@@ -62,16 +66,7 @@ def install_mgmtworker():
     management_worker_rpm_source_url = \
         ctx_properties['management_worker_rpm_source_url']
 
-    # these must all be exported as part of the start operation.
-    # they will not persist, so we should use the new agent
-    # don't forget to change all localhosts to the relevant ips
-    mgmtworker_home = '/opt/mgmtworker'
-    mgmtworker_venv = '{0}/env'.format(mgmtworker_home)
-    celery_work_dir = '{0}/work'.format(mgmtworker_home)
-    celery_log_dir = "/var/log/cloudify/mgmtworker"
-
-    ctx.instance.runtime_properties['rabbitmq_endpoint_ip'] = \
-        utils.get_rabbitmq_endpoint_ip()
+    runtime_props['rabbitmq_endpoint_ip'] = utils.get_rabbitmq_endpoint_ip()
 
     # Fix possible injections in json of rabbit credentials
     # See json.org for string spec
@@ -81,36 +76,31 @@ def install_mgmtworker():
         # things noisily, e.g. on newlines and backspaces.
         # TODO: add:
         # sed 's/"/\\"/' | sed 's/\\/\\\\/' | sed s-/-\\/- | sed 's/\t/\\t/'
-        ctx.instance.runtime_properties[key] = ctx_properties[key]
+        runtime_props[key] = ctx_properties[key]
 
-    # Make the ssl enabled flag work with json (boolean in lower case)
-    # TODO: check if still needed:
-    # broker_ssl_enabled = "$(echo ${rabbitmq_ssl_enabled} | tr '[:upper:]' '[:lower:]')"  # NOQA
-    ctx.instance.runtime_properties['rabbitmq_ssl_enabled'] = True
+    runtime_props['rabbitmq_ssl_enabled'] = True
 
     ctx.logger.info('Installing Management Worker...')
     utils.set_selinux_permissive()
 
-    utils.copy_notice(MGMT_WORKER_SERVICE_NAME)
-    utils.mkdir(mgmtworker_home)
-    utils.mkdir('{0}/config'.format(mgmtworker_home))
-    utils.mkdir(celery_log_dir)
-    utils.mkdir(celery_work_dir)
+    utils.copy_notice(runtime_props['service_name'])
+    utils.mkdir(runtime_props['home_folder'])
+    utils.mkdir('{0}/config'.format(runtime_props['home_folder']))
+    utils.mkdir('{0}/work'.format(runtime_props['home_folder']))
+    utils.mkdir(runtime_props['log_folder'])
 
     # this create the mgmtworker_venv and installs the relevant
     # modules into it.
     utils.yum_install(management_worker_rpm_source_url,
-                      service_name=MGMT_WORKER_SERVICE_NAME)
-    _install_optional(mgmtworker_venv)
+                      service_name=runtime_props['home_folder'])
+    _install_optional()
 
     # Add certificate and select port, as applicable
-    ctx.instance.runtime_properties['broker_cert_path'] = \
-        utils.INTERNAL_CERT_PATH
+    runtime_props['broker_cert_path'] = utils.INTERNAL_CERT_PATH
     # Use SSL port
-    ctx.instance.runtime_properties['broker_port'] = '5671'
+    runtime_props['broker_port'] = '5671'
 
-    ctx.logger.info("broker_port: {0}".format(
-        ctx.instance.runtime_properties['broker_port']))
+    ctx.logger.info("broker_port: {0}".format(runtime_props['broker_port']))
 
 
 install_mgmtworker()

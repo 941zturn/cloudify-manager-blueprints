@@ -746,6 +746,13 @@ node_types:
               default: components/mgmtworker/scripts/stop.py
             hide_output: *hide_output
             fabric_env: *simple_fabric_env
+        delete:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/mgmtworker/scripts/delete.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
 
   manager.nodes.AmqpInfluxBroker:
     derived_from: cloudify.nodes.ApplicationModule
