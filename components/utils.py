@@ -472,6 +472,12 @@ def copy_notice(service):
     copy(resource_file, dest)
 
 
+def remove_notice(service):
+    """Remove the notice file /opt/SERVICENAME_NOTICE.txt"""
+    path = os.path.join('/opt', '{0}_NOTICE.txt'.format(service))
+    remove(path)
+
+
 def is_port_open(port, host='localhost'):
     """Try to connect to (host, port), return if the port was listening."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -561,6 +567,17 @@ def yum_install(source, service_name):
             return
     ctx.logger.info('yum installing {0}...'.format(source_path))
     sudo(['yum', 'install', '-y', source_path])
+
+
+def yum_remove(package, ignore_failures=False):
+    try:
+        sudo(['yum', 'remove', '-y', package])
+    except BaseException:
+        msg = 'Package `{0}` may not been removed successfully!'
+        if not ignore_failures:
+            ctx.logger.error(msg)
+            raise
+        ctx.logger.warn(msg)
 
 
 def get_filepath_from_pkg_name(filename):

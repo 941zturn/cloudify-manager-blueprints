@@ -17,6 +17,8 @@ def _prepare_env():
     utils.set_selinux_permissive()
     postgresql_components_folder = 'postgresql'
     utils.copy_notice(postgresql_components_folder)
+    ctx.instance.runtime_properties['components_folder'] = \
+        postgresql_components_folder
 
 
 def _install_postgresql():
@@ -58,6 +60,7 @@ def _init_postgresql():
     ctx.logger.info('Setting PostgreSQL logs path...')
     ps_95_logs_path = "/var/lib/pgsql/9.5/data/pg_log"
     ps_logs_path = "/var/log/cloudify/postgresql"
+    ctx.instance.runtime_properties['logs_path'] = ps_logs_path
     utils.mkdir(ps_logs_path)
     if not os.path.isdir(ps_95_logs_path):
         utils.ln(source=ps_95_logs_path, target=ps_logs_path, params='-s')
