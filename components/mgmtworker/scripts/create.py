@@ -13,14 +13,14 @@ import utils  # NOQA
 # Some runtime properties to be used in teardown
 runtime_props = ctx.instance.runtime_properties
 runtime_props['service_name'] = 'mgmtworker'
-runtime_props['home_folder'] = '/opt/mgmtworker'
-runtime_props['log_folder'] = '/var/log/cloudify/mgmtworker'
+runtime_props['home_dir'] = '/opt/mgmtworker'
+runtime_props['log_dir'] = '/var/log/cloudify/mgmtworker'
 
 ctx_properties = utils.ctx_factory.create(runtime_props['service_name'])
 
 
 def _install_optional():
-    mgmtworker_venv = '{0}/env'.format(runtime_props['home_folder'])
+    mgmtworker_venv = '{0}/env'.format(runtime_props['home_dir'])
     rest_props = utils.ctx_factory.get('restservice')
     rest_client_source_url = \
         rest_props['rest_client_module_source_url']
@@ -84,15 +84,15 @@ def install_mgmtworker():
     utils.set_selinux_permissive()
 
     utils.copy_notice(runtime_props['service_name'])
-    utils.mkdir(runtime_props['home_folder'])
-    utils.mkdir('{0}/config'.format(runtime_props['home_folder']))
-    utils.mkdir('{0}/work'.format(runtime_props['home_folder']))
-    utils.mkdir(runtime_props['log_folder'])
+    utils.mkdir(runtime_props['home_dir'])
+    utils.mkdir('{0}/config'.format(runtime_props['home_dir']))
+    utils.mkdir('{0}/work'.format(runtime_props['home_dir']))
+    utils.mkdir(runtime_props['log_dir'])
 
     # this create the mgmtworker_venv and installs the relevant
     # modules into it.
     utils.yum_install(management_worker_rpm_source_url,
-                      service_name=runtime_props['home_folder'])
+                      service_name=runtime_props['home_dir'])
     _install_optional()
 
     # Add certificate and select port, as applicable

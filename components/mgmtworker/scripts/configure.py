@@ -16,7 +16,7 @@
 
 import tempfile
 
-from os.path import join, isfile, dirname
+from os.path import join, dirname
 
 from cloudify import ctx
 
@@ -25,38 +25,23 @@ ctx.download_resource(
     join(dirname(__file__), 'utils.py'))
 import utils  # NOQA
 
-
-MGMT_WORKER_SERVICE_NAME = 'mgmtworker'
+runtime_props = ctx.instance.runtime_properties
 CONFIG_PATH = "components/mgmtworker/config"
 
 
 def configure_mgmtworker():
-    # these must all be exported as part of the start operation.
-    # they will not persist, so we should use the new agent
-    # don't forget to change all localhosts to the relevant ips
-    mgmtworker_home = '/opt/mgmtworker'
-    mgmtworker_venv = '{0}/env'.format(mgmtworker_home)
-    celery_work_dir = '{0}/work'.format(mgmtworker_home)
-
-    ctx.instance.runtime_properties['file_server_root'] = \
-        utils.MANAGER_RESOURCES_HOME
+    celery_work_dir = '{0}/work'.format(runtime_props['home_dir'])
+    runtime_props['file_server_root'] = utils.MANAGER_RESOURCES_HOME
 
     ctx.logger.info('Configuring Management worker...')
-    # Deploy the broker configuration
-    # TODO: This will break interestingly if mgmtworker_venv is empty.
-    # Some sort of check for that would be sensible.
-    # To sandy: I don't quite understand this check...
-    # there is no else here..
-    # for python_path in ${mgmtworker_venv}/lib/python*; do
-    if isfile(join(mgmtworker_venv, 'bin/python')):
-        broker_conf_path = join(celery_work_dir, 'broker_config.json')
-        utils.deploy_blueprint_resource(
-            '{0}/broker_config.json'.format(CONFIG_PATH), broker_conf_path,
-            MGMT_WORKER_SERVICE_NAME)
-        # The config contains credentials, do not let the world read it
-        utils.sudo(['chmod', '440', broker_conf_path])
-    utils.systemd.configure(MGMT_WORKER_SERVICE_NAME)
-    utils.logrotate(MGMT_WORKER_SERVICE_NAME)
+    broker_conf_path = join(celery_work_dir, 'broker_config.json')
+    utils.deploy_blueprint_resource(
+        '{0}/broker_config.json'.format(CONFIG_PATH), broker_conf_path,
+        runtime_props['service_name'])
+    # The config contains credentials, do not let the world read it
+    utils.sudo(['chmod', '440', broker_conf_path])
+    utils.systemd.configure(runtime_props['service_name'])
+    utils.logrotate(runtime_props['service_name'])
 
 
 def configure_logging():
@@ -64,6 +49,7 @@ def configure_logging():
     logging_config_dir = '/etc/cloudify'
     config_name = 'logging.conf'
     config_file_destination = join(logging_config_dir, config_name)
+    runtime_props['logging_file_path'] = config_file_destination
     config_file_source = join(CONFIG_PATH, config_name)
     utils.mkdir(logging_config_dir)
     config_file_temp_destination = join(tempfile.gettempdir(), config_name)

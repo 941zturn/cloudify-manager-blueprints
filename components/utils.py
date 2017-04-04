@@ -678,6 +678,14 @@ class SystemD(object):
         self.systemctl('enable', '{0}.service'.format(sid))
         self.systemctl('daemon-reload')
 
+    def remove(self, service_name):
+        """Stop and disable the service, and then delete its data
+        """
+        self.stop(service_name)
+        self.disable(service_name)
+        remove(self.get_service_file_path(service_name))
+        remove(self.get_vars_file_path(service_name))
+
     @staticmethod
     def get_vars_file_path(service_name):
         """Returns the path to a systemd environment variables file
@@ -701,6 +709,13 @@ class SystemD(object):
         ctx.logger.debug('Enabling systemd service {0}...'.format(
             full_service_name))
         self.systemctl('enable', full_service_name, retries)
+
+    def disable(self, service_name, retries=0, append_prefix=True):
+        full_service_name = self._get_full_service_name(service_name,
+                                                        append_prefix)
+        ctx.logger.debug('Disabling systemd service {0}...'.format(
+            full_service_name))
+        self.systemctl('disable', full_service_name, retries)
 
     def start(self, service_name, retries=0, append_prefix=True):
         full_service_name = self._get_full_service_name(service_name,
@@ -835,6 +850,13 @@ def logrotate(service):
                               service)
     chmod('644', config_file_destination)
     chown('root', 'root', config_file_destination)
+
+
+def remove_logrotate(service_name):
+    ctx.logger.debug('Removing logrotate config...')
+    logrotated_path = '/etc/logrotate.d'
+    config_file_destination = os.path.join(logrotated_path, service_name)
+    remove(config_file_destination)
 
 
 def chmod(mode, path):
