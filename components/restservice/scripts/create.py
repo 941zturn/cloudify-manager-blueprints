@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-import os
-from os.path import join, dirname
+from os.path import join, dirname, islink, isdir
 
 from cloudify import ctx
 
@@ -10,15 +9,13 @@ ctx.download_resource(
     join(dirname(__file__), 'utils.py'))
 import utils  # NOQA
 
+# Some runtime properties to be used in teardown
+runtime_props = ctx.instance.runtime_properties
+runtime_props['service_name'] = 'restservice'
+runtime_props['home_dir'] = '/opt/manager'
+runtime_props['log_dir'] = '/var/log/cloudify/rest'
 
-REST_RESOURCES_PATH = 'resources/rest'
-
-# TODO: change to /opt/cloudify-rest-service
-REST_SERVICE_HOME = '/opt/manager'
-REST_SERVICE_NAME = 'restservice'
-CLOUDIFY_AGENT_DIR = 'cloudify_agent'
-
-ctx_properties = utils.ctx_factory.create(REST_SERVICE_NAME)
+ctx_properties = utils.ctx_factory.create(runtime_props['service_name'])
 
 
 def install_optional(rest_venv):
@@ -49,17 +46,19 @@ def install_optional(rest_venv):
         ctx.logger.info('Downloading cloudify-manager Repository...')
         manager_repo = \
             utils.download_cloudify_resource(rest_service_source_url,
-                                             REST_SERVICE_NAME)
+                                             runtime_props['service_name'])
         ctx.logger.info('Extracting Manager Repository...')
-        utils.untar(manager_repo)
+        tmp_dir = utils.untar(manager_repo, use_tmp_dir=True)
+        rest_service_dir = join(tmp_dir, 'rest-service')
+        resources_dir = join(tmp_dir, 'resources/rest-service/cloudify/')
 
         ctx.logger.info('Installing REST Service...')
-        utils.install_python_package('/tmp/rest-service', rest_venv)
+        utils.install_python_package(rest_service_dir, rest_venv)
+
         ctx.logger.info('Deploying Required Manager Resources...')
-        utils.move(
-            '/tmp/resources/rest-service/cloudify/',
-            utils.MANAGER_RESOURCES_HOME
-        )
+        utils.move(resources_dir, utils.MANAGER_RESOURCES_HOME)
+
+        utils.remove(tmp_dir)
 
 
 def deploy_broker_configuration():
@@ -92,18 +91,17 @@ def _configure_dbus(rest_venv):
     # link dbus-python-1.1.1-9.el7.x86_64 to the venv for `cfy status`
     # (module in pypi is very old)
     site_packages = 'lib64/python2.7/site-packages'
-    dbus_relative_path = os.path.join(site_packages, 'dbus')
-    dbuslib = os.path.join('/usr', dbus_relative_path)
-    dbus_glib_bindings = os.path.join('/usr', site_packages,
-                                      '_dbus_glib_bindings.so')
-    dbus_bindings = os.path.join('/usr', site_packages, '_dbus_bindings.so')
-    if os.path.isdir(dbuslib):
-        dbus_venv_path = os.path.join(rest_venv, dbus_relative_path)
-        if not os.path.islink(dbus_venv_path):
+    dbus_relative_path = join(site_packages, 'dbus')
+    dbuslib = join('/usr', dbus_relative_path)
+    dbus_glib_bindings = join('/usr', site_packages, '_dbus_glib_bindings.so')
+    dbus_bindings = join('/usr', site_packages, '_dbus_bindings.so')
+    if isdir(dbuslib):
+        dbus_venv_path = join(rest_venv, dbus_relative_path)
+        if not islink(dbus_venv_path):
             utils.ln(source=dbuslib, target=dbus_venv_path, params='-sf')
             utils.ln(source=dbus_bindings, target=dbus_venv_path, params='-sf')
-        if not os.path.islink(os.path.join(rest_venv, site_packages)):
-            utils.ln(source=dbus_glib_bindings, target=os.path.join(
+        if not islink(join(rest_venv, site_packages)):
+            utils.ln(source=dbus_glib_bindings, target=join(
                     rest_venv, site_packages), params='-sf')
     else:
         ctx.logger.warn(
@@ -113,25 +111,24 @@ def _configure_dbus(rest_venv):
 def install_restservice():
     rest_service_rpm_source_url = ctx_properties['rest_service_rpm_source_url']
 
-    rest_venv = os.path.join(REST_SERVICE_HOME, 'env')
-    rest_service_log_path = '/var/log/cloudify/rest'
-    agent_dir = os.path.join(utils.MANAGER_RESOURCES_HOME, CLOUDIFY_AGENT_DIR)
+    rest_venv = join(runtime_props['home_dir'], 'env')
+    agent_dir = join(utils.MANAGER_RESOURCES_HOME, 'cloudify_agent')
 
     ctx.logger.info('Installing REST Service...')
     utils.set_selinux_permissive()
 
-    utils.copy_notice(REST_SERVICE_NAME)
-    utils.mkdir(REST_SERVICE_HOME)
-    utils.mkdir(rest_service_log_path)
+    utils.copy_notice(runtime_props['service_name'])
+    utils.mkdir(runtime_props['home_dir'])
+    utils.mkdir(runtime_props['log_dir'])
     utils.mkdir(utils.MANAGER_RESOURCES_HOME)
     utils.mkdir(agent_dir)
 
     deploy_broker_configuration()
     utils.yum_install(rest_service_rpm_source_url,
-                      service_name=REST_SERVICE_NAME)
+                      service_name=runtime_props['service_name'])
     _configure_dbus(rest_venv)
     install_optional(rest_venv)
-    utils.logrotate(REST_SERVICE_NAME)
+    utils.logrotate(runtime_props['service_name'])
 
 
 install_restservice()

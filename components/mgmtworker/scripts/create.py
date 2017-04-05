@@ -9,7 +9,6 @@ ctx.download_resource(
     join(dirname(__file__), 'utils.py'))
 import utils  # NOQA
 
-
 # Some runtime properties to be used in teardown
 runtime_props = ctx.instance.runtime_properties
 runtime_props['service_name'] = 'mgmtworker'
@@ -20,18 +19,13 @@ ctx_properties = utils.ctx_factory.create(runtime_props['service_name'])
 
 
 def _install_optional():
-    mgmtworker_venv = '{0}/env'.format(runtime_props['home_dir'])
+    mgmtworker_venv = join(runtime_props['home_dir'], 'env')
     rest_props = utils.ctx_factory.get('restservice')
-    rest_client_source_url = \
-        rest_props['rest_client_module_source_url']
-    plugins_common_source_url = \
-        rest_props['plugins_common_module_source_url']
-    script_plugin_source_url = \
-        rest_props['script_plugin_module_source_url']
-    rest_service_source_url = \
-        rest_props['rest_service_module_source_url']
-    agent_source_url = \
-        rest_props['agent_module_source_url']
+    rest_client_source_url = rest_props['rest_client_module_source_url']
+    plugins_common_source_url = rest_props['plugins_common_module_source_url']
+    script_plugin_source_url = rest_props['script_plugin_module_source_url']
+    rest_service_source_url = rest_props['rest_service_module_source_url']
+    agent_source_url = rest_props['agent_module_source_url']
 
     # this allows to upgrade modules if necessary.
     ctx.logger.info('Installing Optional Packages if supplied...')
@@ -50,15 +44,17 @@ def _install_optional():
         manager_repo = \
             utils.download_cloudify_resource(rest_service_source_url,
                                              runtime_props['service_name'])
+
         ctx.logger.info('Extracting Manager Repository...')
-        utils.untar(manager_repo)
+        tmp_dir = utils.untar(manager_repo, use_tmp_dir=True)
+        workflows_dir = join(tmp_dir, 'workflows')
+        riemann_dir = join(tmp_dir, 'plugins/riemann-controller')
 
         ctx.logger.info('Installing Management Worker Plugins...')
-        # shouldn't we extract the riemann-controller and workflows modules to
-        # their own repos?
-        utils.install_python_package(
-            '/tmp/plugins/riemann-controller', mgmtworker_venv)
-        utils.install_python_package('/tmp/workflows', mgmtworker_venv)
+        utils.install_python_package(riemann_dir, mgmtworker_venv)
+        utils.install_python_package(workflows_dir, mgmtworker_venv)
+
+        utils.remove(tmp_dir)
 
 
 def install_mgmtworker():

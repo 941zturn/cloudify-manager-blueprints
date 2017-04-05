@@ -570,6 +570,10 @@ def yum_install(source, service_name):
 
 
 def yum_remove(package, ignore_failures=False):
+    # If the package name ends with .rpm, strip the extension
+    if package.endswith('.rpm'):
+        package = package.rsplit('.rpm', 1)[0]
+
     try:
         sudo(['yum', 'remove', '-y', package])
     except BaseException:
@@ -888,15 +892,17 @@ def clean_var_log_dir(service):
     pass
 
 
-def untar(source, destination='/tmp', strip=1, skip_old_files=False):
+def untar(source, destination=None, skip_old_files=False, use_tmp_dir=False):
     # TODO: use tarfile instead
+    if not destination:
+        destination = tempfile.mkdtemp() if use_tmp_dir else '/tmp'
     ctx.logger.debug('Extracting {0} to {1}...'.format(
         source, destination))
-    tar_command = ['tar', '-xzvf', source, '-C', destination,
-                   '--strip={0}'.format(strip)]
+    tar_command = ['tar', '-xzvf', source, '-C', destination, '--strip=1']
     if skip_old_files:
         tar_command.append('--skip-old-files')
     sudo(tar_command)
+    return destination
 
 
 def validate_md5_checksum(resource_path, md5_checksum_file_path):

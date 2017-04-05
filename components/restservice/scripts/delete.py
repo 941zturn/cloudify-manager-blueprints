@@ -16,14 +16,13 @@ node_props = ctx.node.properties
 def _uninstall():
     utils.systemd.remove(runtime_props['service_name'])
 
-    mgmtworker_package = node_props['management_worker_rpm_source_url']
-    utils.yum_remove(mgmtworker_package, ignore_failures=True)
+    rest_service_package = node_props['rest_service_rpm_source_url']
+    utils.yum_remove(rest_service_package, ignore_failures=True)
 
 
 def _delete_data():
-    utils.remove(runtime_props['home_dir'])  # /opt/mgmtworker
+    utils.remove(runtime_props['home_dir'])  # /opt/manager
     utils.remove(runtime_props['log_dir'])
-    utils.remove(runtime_props['logging_file_path'])
     utils.remove_notice(runtime_props['service_name'])
     utils.remove_logrotate(runtime_props['service_name'])
 

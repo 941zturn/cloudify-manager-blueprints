@@ -70,7 +70,7 @@ def install_riemann():
     manager_repo = utils.download_cloudify_resource(cloudify_resources_url,
                                                     RIEMANN_SERVICE_NAME)
     ctx.logger.info('Extracting Manager Repository...')
-    utils.untar(manager_repo, '/tmp')
+    utils.untar(manager_repo)
 
 
 install_riemann()
