@@ -569,10 +569,9 @@ def yum_install(source, service_name):
     sudo(['yum', 'install', '-y', source_path])
 
 
-def yum_remove(package, ignore_failures=False):
-    # If the package name ends with .rpm, strip the extension
-    if package.endswith('.rpm'):
-        package = package.rsplit('.rpm', 1)[0]
+def yum_remove(package, is_cloudify_service=False, ignore_failures=False):
+    if is_cloudify_service:
+        package = 'cloudify-{0}'.format(package)
 
     try:
         sudo(['yum', 'remove', '-y', package])

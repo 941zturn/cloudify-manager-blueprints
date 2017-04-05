@@ -10,14 +10,15 @@ ctx.download_resource(
 import utils  # NOQA
 
 runtime_props = ctx.instance.runtime_properties
-node_props = ctx.node.properties
 
 
 def _uninstall():
     utils.systemd.remove(runtime_props['service_name'])
-
-    rest_service_package = node_props['rest_service_rpm_source_url']
-    utils.yum_remove(rest_service_package, ignore_failures=True)
+    utils.yum_remove(
+        runtime_props['service_name'],
+        is_cloudify_service=True,
+        ignore_failures=True
+    )
 
 
 def _delete_data():
