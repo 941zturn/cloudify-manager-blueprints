@@ -9,6 +9,7 @@ ctx.download_resource(
 import utils  # NOQA
 
 PS_SERVICE_NAME = 'postgresql-9.5'
+ctx.instance.runtime_properties['service_name'] = PS_SERVICE_NAME
 ctx_properties = utils.ctx_factory.create(PS_SERVICE_NAME)
 
 
@@ -23,9 +24,9 @@ def _prepare_env():
 
 def _install_postgresql():
     libxslt_rpm_url = ctx_properties['libxslt_rpm_url']
+    ps_libs_rpm_url = ctx_properties['ps_libs_rpm_url']
     ps_rpm_url = ctx_properties['ps_rpm_url']
     ps_contrib_rpm_url = ctx_properties['ps_contrib_rpm_url']
-    ps_libs_rpm_url = ctx_properties['ps_libs_rpm_url']
     ps_server_rpm_url = ctx_properties['ps_server_rpm_url']
     ps_devel_rpm_url = ctx_properties['ps_devel_rpm_url']
     psycopg2_rpm_url = ctx_properties['psycopg2_rpm_url']
@@ -42,6 +43,15 @@ def _install_postgresql():
 
     ctx.logger.info('Installing python libs for PostgreSQL...')
     utils.yum_install(source=psycopg2_rpm_url, service_name=PS_SERVICE_NAME)
+
+    installed_packages = [libxslt_rpm_url,
+                          ps_libs_rpm_url,
+                          ps_rpm_url,
+                          ps_contrib_rpm_url,
+                          ps_server_rpm_url,
+                          ps_devel_rpm_url,
+                          psycopg2_rpm_url]
+    ctx.instance.runtime_properties['installed_packages'] = installed_packages
 
 
 def _init_postgresql():

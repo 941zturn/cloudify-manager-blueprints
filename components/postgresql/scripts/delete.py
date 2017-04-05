@@ -8,14 +8,40 @@ ctx.download_resource(
 import utils  # NOQA
 
 
+def _remove_service():
+    service_name = ctx.instance.runtime_properties['service_name']
+    try:
+        ctx.logger.debug('Stopping service: {0}'.format(service_name))
+        utils.systemd.stop(service_name)
+    except RuntimeError:
+        pass
+    try:
+        ctx.logger.debug('Disabling service: {0}'.format(service_name))
+        utils.systemd.disable(service_name)
+    except RuntimeError:
+        pass
+    try:
+        ctx.logger.debug('Removing service: {0}'.format(service_name))
+        utils.systemd.remove(service_name)
+    except RuntimeError:
+        pass
+
+
 def _uninstall_pgsql():
-    packages_to_remove = ['postgresql95', 'postgresql95-libs']
+    packages_to_remove = ['postgresql95', 'postgresql95-libs']  # + \
+    #  ctx.instance.runtime_properties['installed_packages']
+    for package in packages_to_remove:
+        ctx.logger.debug('Removing package: {0}'.format(package))
+        utils.yum_remove(package, ignore_failures=True)
+
+
+def _delete_data():
     paths_to_remove = ['/opt/cloudify/postgresql',
                        '/opt/cloudify/postgresql-9.5',
+                       '/var/lib/pgsql',
                        '/usr/pgsql-9.5']
-    for package in packages_to_remove:
-        utils.yum_remove(package, ignore_failures=True)
     for path in paths_to_remove:
+        ctx.logger.debug('Deleting path: {0}'.format(path))
         utils.remove(path)
 
 
@@ -30,7 +56,9 @@ def _delete_notice():
 
 
 def main():
+    _remove_service()
     _uninstall_pgsql()
+    _delete_data()
     _delete_logs()
     _delete_notice()
 
