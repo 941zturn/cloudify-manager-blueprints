@@ -7,8 +7,8 @@ After=cloudify-rabbitmq.service
 TimeoutStartSec=0
 Restart=on-failure
 EnvironmentFile=-/etc/sysconfig/cloudify-mgmtworker
-WorkingDirectory=${CELERY_WORK_DIR}
-ExecStart=${VIRTUALENV_DIR}/bin/celery worker \
+WorkingDirectory={{ ctx.instance.runtime_properties.home_dir }}/work
+ExecStart={{ ctx.instance.runtime_properties.home_dir }}/env/bin/celery worker \
     -Ofair \
     --include=cloudify.dispatch \
     --hostname cloudify.management \

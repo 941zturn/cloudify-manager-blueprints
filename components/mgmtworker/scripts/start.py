@@ -9,16 +9,17 @@ ctx.download_resource(
     join(dirname(__file__), 'utils.py'))
 import utils  # NOQA
 
-MGMT_WORKER_SERVICE_NAME = 'mgmtworker'
-CELERY_PATH = '/opt/mgmtworker/env/bin/celery'  # also hardcoded in create
+runtime_props = ctx.instance.runtime_properties
 
 
 @utils.retry(ValueError)
 def check_worker_running():
     """Use `celery status` to check if the worker is running."""
+    work_dir = join(runtime_props['home_dir'], 'work')
+    celery_path = join(runtime_props['home_dir'], 'env', 'bin', 'celery')
     result = utils.sudo([
-        'CELERY_WORK_DIR=/opt/mgmtworker/work',
-        CELERY_PATH,
+        'CELERY_WORK_DIR={0}'.format(work_dir),
+        celery_path,
         '--config=cloudify.broker_config',
         'status'
     ], ignore_failures=True)
@@ -27,9 +28,9 @@ def check_worker_running():
 
 
 ctx.logger.info('Starting Management Worker Service...')
-utils.start_service(MGMT_WORKER_SERVICE_NAME)
+utils.start_service(runtime_props['service_name'])
 
-utils.systemd.verify_alive(MGMT_WORKER_SERVICE_NAME)
+utils.systemd.verify_alive(runtime_props['service_name'])
 
 try:
     check_worker_running()
