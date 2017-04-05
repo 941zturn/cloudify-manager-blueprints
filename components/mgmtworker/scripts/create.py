@@ -12,8 +12,9 @@ import utils  # NOQA
 # Some runtime properties to be used in teardown
 runtime_props = ctx.instance.runtime_properties
 runtime_props['service_name'] = 'mgmtworker'
-runtime_props['home_dir'] = '/opt/mgmtworker'
-runtime_props['log_dir'] = '/var/log/cloudify/mgmtworker'
+runtime_props['home_dir'] = join('/opt', runtime_props['service_name'])
+runtime_props['log_dir'] = join(utils.BASE_LOG_DIR,
+                                runtime_props['service_name'])
 
 ctx_properties = utils.ctx_factory.create(runtime_props['service_name'])
 
@@ -81,8 +82,8 @@ def install_mgmtworker():
 
     utils.copy_notice(runtime_props['service_name'])
     utils.mkdir(runtime_props['home_dir'])
-    utils.mkdir('{0}/config'.format(runtime_props['home_dir']))
-    utils.mkdir('{0}/work'.format(runtime_props['home_dir']))
+    utils.mkdir(join(runtime_props['home_dir'], 'config'))
+    utils.mkdir(join(runtime_props['home_dir'], 'work'))
     utils.mkdir(runtime_props['log_dir'])
 
     # this create the mgmtworker_venv and installs the relevant

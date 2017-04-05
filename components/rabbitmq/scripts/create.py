@@ -49,8 +49,7 @@ def _install_rabbitmq():
     erlang_rpm_source_url = ctx_properties['erlang_rpm_source_url']
     rabbitmq_rpm_source_url = ctx_properties['rabbitmq_rpm_source_url']
     # TODO: maybe we don't need this env var
-    os.putenv('RABBITMQ_FD_LIMIT',
-              str(ctx_properties['rabbitmq_fd_limit']))
+    os.putenv('RABBITMQ_FD_LIMIT', str(ctx_properties['rabbitmq_fd_limit']))
     rabbitmq_log_path = '/var/log/cloudify/rabbitmq'
     rabbitmq_username = ctx_properties['rabbitmq_username']
     rabbitmq_password = ctx_properties['rabbitmq_password']
