@@ -33,6 +33,8 @@ INTERNAL_SSL_KEY_FILENAME = 'cloudify_internal_key.pem'
 INTERNAL_PKCS12_FILENAME = 'cloudify_internal.p12'
 INTERNAL_REST_PORT = 53333
 
+BASE_LOG_DIR = '/var/log/cloudify'
+
 EXTERNAL_SSL_CERTS_SOURCE_DIR = 'resources/ssl'
 EXTERNAL_SSL_CERT_FILENAME = 'cloudify_external_cert.pem'
 EXTERNAL_SSL_KEY_FILENAME = 'cloudify_external_key.pem'

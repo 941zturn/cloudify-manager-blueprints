@@ -168,6 +168,13 @@ node_types:
               default: components/java/scripts/validate.py
             hide_output: *hide_output
             fabric_env: *simple_fabric_env
+        delete:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: components/java/scripts/delete.py
+            hide_output: *hide_output
+            fabric_env: *simple_fabric_env
 
   manager.nodes.Consul:
     derived_from: cloudify.nodes.SoftwareComponent
