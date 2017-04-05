@@ -571,10 +571,7 @@ def yum_install(source, service_name):
     sudo(['yum', 'install', '-y', source_path])
 
 
-def yum_remove(package, is_cloudify_service=False, ignore_failures=False):
-    if is_cloudify_service:
-        package = 'cloudify-{0}'.format(package)
-
+def yum_remove(package, ignore_failures=False):
     try:
         sudo(['yum', 'remove', '-y', package])
     except BaseException:

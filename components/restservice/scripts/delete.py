@@ -13,18 +13,14 @@ runtime_props = ctx.instance.runtime_properties
 
 
 def _uninstall():
+    ctx.logger.info('Uninstalling {0}'.format(runtime_props['service_name']))
     utils.systemd.remove(runtime_props['service_name'])
 
-    # Calling `rest-service` directly, because the service name is restservice,
-    # but the yum package name is cloudify-rest-service
-    utils.yum_remove(
-        'rest-service',
-        is_cloudify_service=True,
-        ignore_failures=True
-    )
+    utils.yum_remove('cloudify-rest-service', ignore_failures=True)
 
 
 def _delete_data():
+    ctx.logger.info('Removing {0} data'.format(runtime_props['service_name']))
     utils.remove(runtime_props['home_dir'])  # /opt/manager
     utils.remove(runtime_props['log_dir'])
     utils.remove_notice(runtime_props['service_name'])
